@@ -20,6 +20,7 @@
 
 #include "Arduino.h"
 #include "low_power.h"
+#include "stm32yyxx_ll_i2c.h"
 #include "stm32yyxx_ll_pwr.h"
 
 #if defined(HAL_PWR_MODULE_ENABLED) && !defined(HAL_PWR_MODULE_ONLY)
@@ -39,6 +40,7 @@ static UART_HandleTypeDef *WakeUpUart = NULL;
 #endif
 /* Save callback pointer */
 static void (*WakeUpUartCb)(void) = NULL;
+static void (*WakeUpI2cCb)(void) = NULL;
 
 #if defined(PWR_FLAG_WUF)
 #define PWR_FLAG_WU PWR_FLAG_WUF
@@ -647,6 +649,32 @@ void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void))
 #endif
   /* Save callback */
   WakeUpUartCb = FuncPtr;
+}
+
+/**
+  * @brief  Configure the I2C as a wakeup source. A callback can be called when
+  *         the chip leaves the low power mode. See board datasheet to check
+  *         with which low power mode the I2C is compatible.
+  * Warning This function will change I2C clock source to HSI
+  * @param  i2C: pointer to i2c handle
+  * @param  FuncPtr: pointer to callback
+  * @retval None
+  */
+void LowPower_EnableWakeUpI2C(I2C_HandleTypeDef *i2c, void (*FuncPtr)(void))
+{
+  if (i2c == NULL) {
+    return;
+  }
+
+  /* Digital filter is not compatible with the wake-up from Stop mode feature. */
+  HAL_I2CEx_ConfigDigitalFilter(i2c, 0);
+  /* make sure that no i2C transfer is on-going */
+  while (!LL_I2C_IsActiveFlag_BUSY(i2c->Instance));
+
+  /* Enable I2C peripheral in wake up from stop mode */
+  HAL_I2CEx_EnableWakeUp(i2c);
+  /* Save callback */
+  WakeUpI2cCb = FuncPtr;
 }
 
 /**

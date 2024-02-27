@@ -55,6 +55,7 @@ extern "C" {
 void LowPower_init();
 void LowPower_EnableWakeUpPin(uint32_t pin, uint32_t mode);
 void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void));
+void LowPower_EnableWakeUpI2C(I2C_HandleTypeDef *i2c, void (*FuncPtr)(void));
 void LowPower_sleep(uint32_t regulator);
 void LowPower_stop(serial_t *obj);
 void LowPower_standby();

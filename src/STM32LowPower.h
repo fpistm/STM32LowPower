@@ -38,7 +38,7 @@
 #define _STM32_LOW_POWER_H_
 
 #include <Arduino.h>
-
+#include <Wire.h>
 #include "low_power.h"
 
 // Check if PWR HAL enable in variants/board_name/stm32yzxx_hal_conf.h
@@ -90,11 +90,13 @@ class STM32LowPower {
     void attachInterruptWakeup(uint32_t pin, voidFuncPtrVoid callback, uint32_t mode, LP_Mode LowPowerMode = SHUTDOWN_MODE);
 
     void enableWakeupFrom(HardwareSerial *serial, voidFuncPtrVoid callback);
+    void enableWakeupFrom(TwoWire *wire, voidFuncPtrVoid callback);
     void enableWakeupFrom(STM32RTC *rtc, voidFuncPtr callback, void *data = NULL);
 
   private:
     bool _configured;     // Low Power mode initialization status
     serial_t *_serial;    // Serial for wakeup from deep sleep
+    I2C_HandleTypeDef *_i2c; // I2C for wakeup from stop mode
     bool _rtc_wakeup;     // Is RTC wakeup?
     void programRtcWakeUp(uint32_t ms, LP_Mode lp_mode);
     void setAlarmTime(uint32_t ms, STM32RTC &rtc);
