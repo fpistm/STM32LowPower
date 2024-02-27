@@ -20,6 +20,7 @@
 
 #include "Arduino.h"
 #include "low_power.h"
+#include "stm32yyxx_ll_i2c.h"
 #include "stm32yyxx_ll_pwr.h"
 
 #if defined(HAL_PWR_MODULE_ENABLED) && !defined(HAL_PWR_MODULE_ONLY)
@@ -27,6 +28,10 @@
 #if defined(HAL_UART_MODULE_ENABLED) && !defined(HAL_UART_MODULE_ONLY) \
   && (defined(UART_IT_WUF) || defined(LPUART1_BASE))
   #define UART_WKUP_SUPPORT
+#endif
+#if defined(HAL_I2C_MODULE_ENABLED) && !defined(HAL_I2C_MODULE_ONLY) \
+  && defined(I2C_CR1_WUPEN)
+  #define I2C_WKUP_SUPPORT
 #endif
 
 #ifdef __cplusplus
@@ -37,8 +42,13 @@ extern "C" {
 /* Save UART handler for callback */
 static UART_HandleTypeDef *WakeUpUart = NULL;
 #endif
+#if defined(I2C_WKUP_SUPPORT)
+/* Save I2C handle for callback */
+static I2C_HandleTypeDef *WakeUpI2c = NULL;
+#endif
 /* Save callback pointer */
 static void (*WakeUpUartCb)(void) = NULL;
+static void (*WakeUpI2cCb)(void) = NULL;
 
 #if defined(PWR_FLAG_WUF)
 #define PWR_FLAG_WU PWR_FLAG_WUF
@@ -442,7 +452,12 @@ void LowPower_stop(serial_t *obj)
     HAL_UARTEx_EnableStopMode(WakeUpUart);
   }
 #endif
-
+#if defined(I2C_WKUP_SUPPORT)
+  if (WakeUpI2c != NULL) {
+    /* Enable I2C peripheral in wake up from stop mode */
+    HAL_I2CEx_EnableWakeUp(WakeUpI2c);
+  }
+#endif
 #if defined(PWR_CR_ULP)
   /* Enable Ultra low power mode */
   HAL_PWREx_EnableUltraLowPower();
@@ -482,10 +497,14 @@ void LowPower_stop(serial_t *obj)
 #if defined(UART_WKUP_SUPPORT) && (defined(PWR_CPUCR_RETDS_CD) \
  || defined(PWR_CR1_LPMS_STOP2) || defined(PWR_LOWPOWERMODE_STOP2) \
  || defined(LL_PWR_STOP2_MODE))
-  if ((WakeUpUart == NULL)
+  if (((WakeUpUart == NULL)
       || (WakeUpUart->Instance == (USART_TypeDef *)LPUART1_BASE)
 #ifdef LPUART2_BASE
       || (WakeUpUart->Instance == (USART_TypeDef *)LPUART2_BASE)
+#endif
+    )
+#if defined(I2C_WKUP_SUPPORT)
+    && (WakeUpI2c == NULL)
 #endif
      ) {
 #if defined(PWR_CR1_RRSTP)
@@ -515,12 +534,20 @@ void LowPower_stop(serial_t *obj)
 #else
   UNUSED(obj);
 #endif
+#if defined(I2C_WKUP_SUPPORT)
+  if (WakeUpI2c != NULL) {
+    HAL_I2CEx_DisableWakeUp(WakeUpI2c);
+  }
+#endif
   __enable_irq();
 
   HAL_Delay(10);
 
   if (WakeUpUartCb != NULL) {
     WakeUpUartCb();
+  }
+  if (WakeUpI2cCb != NULL) {
+    WakeUpI2cCb();
   }
 }
 
@@ -647,6 +674,34 @@ void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void))
 #endif
   /* Save callback */
   WakeUpUartCb = FuncPtr;
+}
+
+/**
+  * @brief  Configure the I2C as a wakeup source. A callback can be called when
+  *         the chip leaves the low power mode. See board datasheet to check
+  *         with which low power mode the I2C is compatible.
+  * Warning This function will change I2C clock source to HSI
+  * @param  i2C: pointer to i2c handle
+  * @param  FuncPtr: pointer to callback
+  * @retval None
+  */
+void LowPower_EnableWakeUpI2C(I2C_HandleTypeDef *hi2c, void (*FuncPtr)(void))
+{
+#if defined(I2C_WKUP_SUPPORT)
+  if (hi2c == NULL) {
+    return;
+  }
+  /* Save I2C handle */
+  WakeUpI2c = hi2c;
+  /* Digital filter is not compatible with the wake-up from Stop mode feature. */
+  HAL_I2CEx_ConfigDigitalFilter(hi2c, 0);
+  /* make sure that no i2C transfer is on-going */
+  while (!LL_I2C_IsActiveFlag_BUSY(hi2c->Instance));
+#else
+  UNUSED(hi2c);
+#endif
+  /* Save callback */
+  WakeUpI2cCb = FuncPtr;
 }
 
 /**
