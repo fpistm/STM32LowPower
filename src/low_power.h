@@ -54,9 +54,9 @@ extern "C" {
 
 void LowPower_init();
 void LowPower_EnableWakeUpPin(uint32_t pin, uint32_t mode);
-void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void));
+void LowPower_EnableWakeUpUart(UART_HandleTypeDef *huart, void (*FuncPtr)(void));
 void LowPower_sleep(uint32_t regulator);
-void LowPower_stop(serial_t *obj);
+void LowPower_stop(void);
 void LowPower_standby();
 void LowPower_shutdown(bool isRTC);
 /* Weaked function */

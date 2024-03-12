@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 #if defined(UART_WKUP_SUPPORT)
-/* Save UART handler for callback */
+/* Save UART handle for callback */
 static UART_HandleTypeDef *WakeUpUart = NULL;
 #endif
 /* Save callback pointer */
@@ -433,7 +433,7 @@ void LowPower_sleep(uint32_t regulator)
   * @param  obj : pointer to serial_t structure
   * @retval None
   */
-void LowPower_stop(serial_t *obj)
+void LowPower_stop(void)
 {
   __disable_irq();
 
@@ -509,11 +509,9 @@ void LowPower_stop(serial_t *obj)
 #if defined(UART_WKUP_SUPPORT)
   if (WakeUpUart != NULL) {
     /* In case of WakeUp from UART, reset its clock source to HSI */
-    uart_config_lowpower(obj);
+    uart_config_lowpower(WakeUpUart);
     HAL_UARTEx_DisableStopMode(WakeUpUart);
   }
-#else
-  UNUSED(obj);
 #endif
   __enable_irq();
 
@@ -611,20 +609,20 @@ void LowPower_shutdown(bool isRTC)
   *         the chip leaves the low power mode. See board datasheet to check
   *         with which low power mode the UART is compatible.
   * Warning This function will change UART clock source to HSI
-  * @param  serial: pointer to serial
+  * @param  huart: pointer to UART handle
   * @param  FuncPtr: pointer to callback
   * @retval None
   */
-void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void))
+void LowPower_EnableWakeUpUart(UART_HandleTypeDef *huart, void (*FuncPtr)(void))
 {
 #if defined(UART_WKUP_SUPPORT)
 #ifdef IS_UART_WAKEUP_SELECTION
   UART_WakeUpTypeDef WakeUpSelection;
-  if (serial == NULL) {
+  if (huart == NULL) {
     return;
   }
-  /* Save Uart handler and Serial object */
-  WakeUpUart = &(serial->handle);
+  /* Save Uart handle */
+  WakeUpUart = huart;
 
   /* make sure that no UART transfer is on-going */
   while (__HAL_UART_GET_FLAG(WakeUpUart, USART_ISR_BUSY) == SET);
@@ -643,7 +641,7 @@ void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void))
   __HAL_UART_ENABLE_IT(WakeUpUart, UART_IT_WUF);
 #endif
 #else
-  UNUSED(serial);
+  UNUSED(huart);
 #endif
   /* Save callback */
   WakeUpUartCb = FuncPtr;
