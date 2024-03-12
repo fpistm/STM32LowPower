@@ -20,6 +20,7 @@
 
 #include "Arduino.h"
 #include "low_power.h"
+#include "stm32yyxx_ll_i2c.h"
 #include "stm32yyxx_ll_pwr.h"
 
 #if defined(HAL_PWR_MODULE_ENABLED) && !defined(HAL_PWR_MODULE_ONLY)
@@ -37,8 +38,13 @@ extern "C" {
 /* Save UART handle for callback */
 static UART_HandleTypeDef *WakeUpUart = NULL;
 #endif
+#if defined(I2C_WKUP_SUPPORT)
+/* Save I2C handle for callback */
+static I2C_HandleTypeDef *WakeUpI2c = NULL;
+#endif
 /* Save callback pointer */
 static void (*WakeUpUartCb)(void) = NULL;
+static void (*WakeUpI2cCb)(void) = NULL;
 
 #if defined(PWR_FLAG_WUF)
 #define PWR_FLAG_WU PWR_FLAG_WUF
@@ -442,7 +448,6 @@ void LowPower_stop(void)
     HAL_UARTEx_EnableStopMode(WakeUpUart);
   }
 #endif
-
 #if defined(PWR_CR_ULP)
   /* Enable Ultra low power mode */
   HAL_PWREx_EnableUltraLowPower();
@@ -482,10 +487,14 @@ void LowPower_stop(void)
 #if defined(UART_WKUP_SUPPORT) && (defined(PWR_CPUCR_RETDS_CD) \
  || defined(PWR_CR1_LPMS_STOP2) || defined(PWR_LOWPOWERMODE_STOP2) \
  || defined(LL_PWR_STOP2_MODE))
-  if ((WakeUpUart == NULL)
+  if (((WakeUpUart == NULL)
       || (WakeUpUart->Instance == (USART_TypeDef *)LPUART1_BASE)
 #ifdef LPUART2_BASE
       || (WakeUpUart->Instance == (USART_TypeDef *)LPUART2_BASE)
+#endif
+    )
+#if defined(I2C_WKUP_SUPPORT)
+    && (WakeUpI2c == NULL)
 #endif
      ) {
 #if defined(PWR_CR1_RRSTP)
@@ -519,6 +528,9 @@ void LowPower_stop(void)
 
   if (WakeUpUartCb != NULL) {
     WakeUpUartCb();
+  }
+  if (WakeUpI2cCb != NULL) {
+    WakeUpI2cCb();
   }
 }
 
@@ -646,6 +658,27 @@ void LowPower_EnableWakeUpUart(UART_HandleTypeDef *huart, void (*FuncPtr)(void))
   /* Save callback */
   WakeUpUartCb = FuncPtr;
 }
+
+/**
+  * @brief  Configure the I2C as a wakeup source. A callback can be called when
+  *         the chip leaves the low power mode. See board datasheet to check
+  *         with which low power mode the I2C is compatible.
+  * Warning This function will change I2C clock source to HSI
+  * @param  i2C: pointer to i2c handle
+  * @param  FuncPtr: pointer to callback
+  * @retval None
+  */
+#if defined(I2C_WKUP_SUPPORT)
+void LowPower_EnableWakeUpI2C(I2C_HandleTypeDef *hi2c, void (*FuncPtr)(void))
+{
+  if (hi2c == NULL) {
+    return;
+  }
+  /* Save I2C handle and callback */
+  WakeUpI2c = hi2c;
+  WakeUpI2cCb = FuncPtr;
+}
+#endif
 
 /**
   * @brief  Configures system clock and system IP clocks after wake-up from STOP

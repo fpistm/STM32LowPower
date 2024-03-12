@@ -159,6 +159,28 @@ void STM32LowPower::enableWakeupFrom(HardwareSerial *serial, voidFuncPtrVoid cal
 }
 
 /**
+  * @brief  Enable a wire interface as a wakeup source.
+  * @param  wire: pointer to a TwoWire
+  * @param  callback: pointer to callback function called when leave the low power
+  *                   mode.
+  * @retval None
+  */
+#if defined(I2C_WKUP_SUPPORT)
+void STM32LowPower::enableWakeupFrom(TwoWire *wire, voidFuncPtrVoid callback)
+{
+  if (wire != NULL) {
+    _hi2c = wire->getHandle();
+    if(!IS_I2C_WAKEUP_FROMSTOP_INSTANCE(_hi2c->Instance)) {
+      Error_Handler();
+    }
+    // Reconfigure i2C for low power mode (using HSI as clock source)
+    wire->configForLowPower();
+    LowPower_EnableWakeUpI2C(_hi2c, callback);
+  }
+}
+#endif
+
+/**
   * @brief  Attach a callback to a RTC alarm.
   * @param  rtc: pointer to a STM32RTC. Can be NULL as RTC is a Singleton.
   * @param  callback: pointer to callback function called when leave the low power

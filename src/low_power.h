@@ -40,6 +40,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32_def.h"
 #include "uart.h"
+#include "utility/twi.h"
 
 #if defined(HAL_PWR_MODULE_ENABLED) && !defined(HAL_PWR_MODULE_ONLY)
 
@@ -55,6 +56,9 @@ extern "C" {
 void LowPower_init();
 void LowPower_EnableWakeUpPin(uint32_t pin, uint32_t mode);
 void LowPower_EnableWakeUpUart(UART_HandleTypeDef *huart, void (*FuncPtr)(void));
+#if defined(I2C_WKUP_SUPPORT)
+void LowPower_EnableWakeUpI2C(I2C_HandleTypeDef *hi2c, void (*FuncPtr)(void));
+#endif
 void LowPower_sleep(uint32_t regulator);
 void LowPower_stop(void);
 void LowPower_standby();
