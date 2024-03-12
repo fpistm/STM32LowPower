@@ -42,7 +42,7 @@ STM32LowPower LowPower;
 STM32LowPower::STM32LowPower()
 {
   _configured = false;
-  _serial = NULL;
+  _huart = NULL;
   _rtc_wakeup = false;
 }
 
@@ -101,7 +101,7 @@ void STM32LowPower::deepSleep(uint32_t ms)
   if ((ms != 0) || _rtc_wakeup) {
     programRtcWakeUp(ms, DEEP_SLEEP_MODE);
   }
-  LowPower_stop(_serial);
+  LowPower_stop();
 }
 
 /**
@@ -151,10 +151,10 @@ void STM32LowPower::attachInterruptWakeup(uint32_t pin, voidFuncPtrVoid callback
 void STM32LowPower::enableWakeupFrom(HardwareSerial *serial, voidFuncPtrVoid callback)
 {
   if (serial != NULL) {
-    _serial = &(serial->_serial);
+    _huart = serial->getHandle();
     // Reconfigure serial for low power mode (using HSI as clock source)
     serial->configForLowPower();
-    LowPower_EnableWakeUpUart(_serial, callback);
+    LowPower_EnableWakeUpUart(_huart, callback);
   }
 }
 

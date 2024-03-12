@@ -95,7 +95,7 @@ class STM32LowPower {
 
   private:
     bool _configured;     // Low Power mode initialization status
-    serial_t *_serial;    // Serial for wakeup from deep sleep
+    UART_HandleTypeDef *_huart; // Serial for wakeup from deep sleep
     I2C_HandleTypeDef *_hi2c; // I2C for wakeup from stop mode
     bool _rtc_wakeup;     // Is RTC wakeup?
     void programRtcWakeUp(uint32_t ms, LP_Mode lp_mode);
