@@ -463,7 +463,7 @@ void LowPower_stop(serial_t *obj)
   __HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_HSI);
 #endif
 #endif
-#if defined(STM32WBxx)
+#if defined(STM32WBxx) || (defined(STM32WLxx) && defined(DUAL_CORE))
   /* Set low-power mode of CPU2 */
   /* Note: Typically, action performed by CPU2 on a dual core application.
            Since this example is single core, perform it by CPU1. */
