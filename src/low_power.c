@@ -21,6 +21,7 @@
 #include "Arduino.h"
 #include "low_power.h"
 #include "stm32yyxx_ll_cortex.h"
+#include "stm32yyxx_ll_lpuart.h"
 #include "stm32yyxx_ll_pwr.h"
 
 #if defined(HAL_PWR_MODULE_ENABLED) && !defined(HAL_PWR_MODULE_ONLY)
@@ -939,6 +940,9 @@ void LowPower_EnableWakeUpUart(serial_t *serial, void (*FuncPtr)(void))
   /* Enable the UART Wake UP from STOPx mode Interrupt */
   __HAL_UART_ENABLE_IT(WakeUpUart, UART_IT_WUF);
 #endif
+
+  LL_LPUART_ClearFlag_WKUP(LPUART1);
+  LL_LPUART_EnableIT_WKUP(LPUART1);
 #else
   UNUSED(serial);
 #endif
