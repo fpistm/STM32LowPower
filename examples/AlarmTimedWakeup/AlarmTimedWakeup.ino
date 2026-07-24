@@ -37,7 +37,7 @@ static byte month = 1;
 static byte year = 18;
 
 void setup() {
-#if defined(RTC_BINARY_NONE)
+#if defined(LL_RTC_BINARY_NONE)
   // Select RTC clock source: LSI_CLOCK, LSE_CLOCK or HSE_CLOCK.
   // By default the LSI is selected as source.
   // rtc.setClockSource(STM32RTC::LSE_CLOCK);
@@ -47,7 +47,7 @@ void setup() {
   rtc.begin(true); /* reset the RTC else the binary mode is not changed */
 #else
   rtc.begin();
-#endif /* RTC_BINARY_NONE */
+#endif /* LL_RTC_BINARY_NONE */
   rtc.setTime(hours, minutes, seconds);
   rtc.setDate(weekDay, day, month, year);
 

@@ -43,9 +43,10 @@
 #endif
 #include "low_power.h"
 
-// Check if PWR HAL enable in variants/board_name/stm32yzxx_hal_conf.h
-#ifndef HAL_PWR_MODULE_ENABLED
-  #error "PWR configuration is missing. Check flag HAL_PWR_MODULE_ENABLED in variants/board_name/stm32yzxx_hal_conf.h"
+// Check if PWR HAL is enabled
+#if (!defined(HAL_PWR_MODULE_ENABLED) && (!defined(USE_HAL_PWR_MODULE) || \
+    (defined(USE_HAL_PWR_MODULE) && (USE_HAL_PWR_MODULE == 0))))
+#error "HAL PWR module is not enabled."
 #endif
 
 #include "STM32RTC.h"
